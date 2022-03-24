@@ -26,7 +26,6 @@ import com.alibaba.datax.plugin.rdbms.util.DataBaseType;
 import com.alibaba.datax.plugin.rdbms.writer.util.WriterUtil;
 
 public class CopyWorker implements Callable<Long> {
-	private static int MaxCsvSize = 4194304;
 	private static final Logger LOG = LoggerFactory.getLogger(CopyWorker.class);
 
 	private CopyWriterTask task = null;
@@ -46,7 +45,9 @@ public class CopyWorker implements Callable<Long> {
 		this.pipeIn = new PipedInputStream(pipeOut);
 		this.sql = copySql;
 
-		changeCsvSizelimit(connection);
+		if (task.getMaxCsvLineSize() >= 1024) {
+			changeCsvSizelimit(connection);
+		}
 
 		this.copyResult = new FutureTask<Long>(new Callable<Long>() {
 
@@ -139,12 +140,12 @@ public class CopyWorker implements Callable<Long> {
 
 	private void changeCsvSizelimit(Connection conn) {
 		List<String> sqls = new ArrayList<String>();
-		sqls.add("set gp_max_csv_line_length = " + Integer.toString(MaxCsvSize));
+		sqls.add("set gp_max_csv_line_length = " + Integer.toString(task.getMaxCsvLineSize()));
 
 		try {
 			WriterUtil.executeSqls(conn, sqls, task.getJdbcUrl(), DataBaseType.PostgreSQL);
 		} catch (Exception e) {
-			LOG.warn("Cannot set gp_max_csv_line_length to " + MaxCsvSize);
+			LOG.warn("Cannot set gp_max_csv_line_length to " + task.getMaxCsvLineSize());
 		}
 	}
 }

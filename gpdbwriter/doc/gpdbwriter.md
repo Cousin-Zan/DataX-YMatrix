@@ -77,6 +77,7 @@ GpdbWriter通过 DataX 框架获取 Reader 生成的协议数据，根据你配�
                         "copy_queue_size": 1000,
                         "num_copy_processor": 4,
                         "num_copy_writer": 1,
+                        "max_csv_line_size": 4194304,
                         "column": [
                             "name",
                             "fileSize",

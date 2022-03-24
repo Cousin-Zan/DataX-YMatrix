@@ -30,6 +30,7 @@ public class CopyWriterTask extends CommonRdbmsWriter.Task {
 	private static final Logger LOG = LoggerFactory.getLogger(CopyWriterTask.class);
 	private Configuration writerSliceConfig = null;
 	private int numProcessor;
+	private int maxCsvLineSize;
 	private int numWriter;
 	private int queueSize;
 	private volatile boolean stopProcessor = false;
@@ -100,17 +101,22 @@ public class CopyWriterTask extends CommonRdbmsWriter.Task {
 		return !stopWriter;
 	}
 
+	public int getMaxCsvLineSize() {
+		return maxCsvLineSize;
+	}
+
 	@Override
 	public void startWrite(RecordReceiver recordReceiver, Configuration writerSliceConfig,
 			TaskPluginCollector taskPluginCollector) {
 		this.writerSliceConfig = writerSliceConfig;
 		int segment_reject_limit = writerSliceConfig.getInt("segment_reject_limit", 0);
 		this.queueSize = writerSliceConfig.getInt("copy_queue_size", 1000);
-		this.queueSize = this.queueSize < 10 ? 10 : this.queueSize;
+		this.queueSize = Math.max(this.queueSize, 10);
 		this.numProcessor = writerSliceConfig.getInt("num_copy_processor", 4);
-		this.numProcessor = this.numProcessor < 1 ? 1 : this.numProcessor;
+		this.numProcessor = Math.max(this.numProcessor, 1);
 		this.numWriter = writerSliceConfig.getInt("num_copy_writer", 1);
-		this.numWriter = this.numWriter < 1 ? 1 : this.numWriter;
+		this.numWriter = Math.max(this.numWriter, 1);
+		this.maxCsvLineSize = writerSliceConfig.getInt("max_csv_line_size", 0);
 
 		String sql = getCopySql(this.table, this.columns, segment_reject_limit);
 		LinkedBlockingQueue<Record> recordQueue = new LinkedBlockingQueue<Record>(queueSize);
