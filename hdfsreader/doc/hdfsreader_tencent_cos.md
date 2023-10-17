@@ -17,7 +17,8 @@
                             "fs.cosn.impl": "org.apache.hadoop.fs.CosFileSystem",
                             "fs.cosn.userinfo.region": "ap-guangzhou",
                             "fs.cosn.userinfo.secretId": "XXXXXXXXXXX",
-                            "fs.cosn.userinfo.secretKey": "XXXXXXXXXXX"
+                            "fs.cosn.userinfo.secretKey": "XXXXXXXXXXX",
+                            "mapred.min.split.size": "536870912"
                         },
                         "fieldDelimiter": ","
                     }
@@ -58,3 +59,4 @@
     }
 }
 ```
+在JSON配置文件中HadoopConfig加入"mapred.min.split.size": "536870912"参数，该参数比parquet文件大即可。这样读取不会分片，就一个分片，数据不会出现丢失的问题
