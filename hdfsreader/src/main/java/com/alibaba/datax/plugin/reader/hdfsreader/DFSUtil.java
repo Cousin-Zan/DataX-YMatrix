@@ -373,9 +373,9 @@ public class DFSUtil {
         }
     }
 
-    public void parquetFileStartRead(String sourceOrcFilePath, Configuration readerSliceConfig,
+    public void parquetFileStartRead(String sourceParquetFilePath, Configuration readerSliceConfig,
                                      RecordSender recordSender, TaskPluginCollector taskPluginCollector) {
-        LOG.info(String.format("Start Read parquetfile [%s].", sourceOrcFilePath));
+        LOG.info(String.format("Start Read parquetfile [%s].", sourceParquetFilePath));
         List<ColumnEntry> column = UnstructuredStorageReaderUtil
                 .getListColumnEntry(readerSliceConfig, com.alibaba.datax.plugin.unstructuredstorage.reader.Key.COLUMN);
         String nullFormat = readerSliceConfig.getString(com.alibaba.datax.plugin.unstructuredstorage.reader.Key.NULL_FORMAT);
@@ -385,7 +385,7 @@ public class DFSUtil {
         int columnIndexMax = -1;
         // 判断是否读取所有列
         if (null == column || column.size() == 0) {
-            int allColumnsCount = getAllColumnsCountByparquet(sourceOrcFilePath);
+            int allColumnsCount = getAllColumnsCountByparquet(sourceParquetFilePath);
             columnIndexMax = allColumnsCount - 1;
             isReadAllColumns = true;
         } else {
@@ -401,7 +401,7 @@ public class DFSUtil {
         }
         if (columnIndexMax >= 0) {
             JobConf conf = new JobConf(hadoopConf);
-            Path parquetFilePath = new Path(sourceOrcFilePath);
+            Path parquetFilePath = new Path(sourceParquetFilePath);
             Properties p = new Properties();
             p.setProperty("columns", allColumns.toString());
             p.setProperty("columns.types", allColumnTypes.toString());
@@ -436,7 +436,7 @@ public class DFSUtil {
                 reader.close();
             } catch (Exception e) {
                 String message = String.format("从parquetfile文件路径[%s]中读取数据发生异常，请联系系统管理员。"
-                        , sourceOrcFilePath);
+                        , sourceParquetFilePath);
                 LOG.error(message);
                 throw DataXException.asDataXException(HdfsReaderErrorCode.READ_FILE_ERROR, message);
             }
