@@ -1,0 +1,6 @@
+{
+  "name": "influxdb2reader",
+  "class": "com.alibaba.datax.plugin.reader.influxdb2reader.InfluxDB2Reader",
+  "description": "influxDB v2 读取插件",
+  "developer": "Tooi"
+}

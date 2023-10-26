@@ -1,0 +1,26 @@
+{
+  "name": "influxdb2reader",
+  "parameter": {
+    "endpoint": "http://192.168.142.135:8086",
+    "token": "qWUdCcPDbCY1X89P9_5g_fwIKHMFBoLtLLc1aWLk79ydqyBi8HIlLDPkivK4zN_dlw2OqXm7OXXKxMQXxNq2hQ==",
+    "org": "cousin",
+    "bucket": "csb",
+    "measurement": "SwDevice-Data",
+    "column": [
+      "_time",
+      "SN",
+      "CCID",
+      "ssyy",
+      "status",
+      "errHw",
+      "errSw",
+      "temperature",
+      "humidity",
+      "voltage",
+      "battery"
+    ],
+    "splitIntervalS": 6000000,
+    "beginDateTime": "2020-01-01 00:00:00",
+    "endDateTime": "2021-01-01 00:00:00"
+  }
+}
