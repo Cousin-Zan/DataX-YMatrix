@@ -58,6 +58,7 @@
         <module>streamreader</module>
         <module>influxdbreader</module>
         <module>influxdb2reader</module>
+        <module>influxdb2httpreader</module>
 <!--        <module>hbasereader</module>-->
 <!--        <module>ossreader</module>-->
 <!--        <module>ftpreader</module>-->
