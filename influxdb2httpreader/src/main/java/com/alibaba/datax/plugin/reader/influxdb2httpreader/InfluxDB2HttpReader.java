@@ -171,6 +171,9 @@ public class InfluxDB2HttpReader extends Reader {
 
                         for (int i = 4; i < sourceLine.length; i++) {
 
+                            if (i == 5) {
+                                continue;
+                            }
                             String value = sourceLine[i];
 
                             if (value == null | Objects.equals(value, "")) {
