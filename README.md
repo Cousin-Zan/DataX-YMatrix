@@ -54,7 +54,8 @@ DataX目前已经有了比较全面的插件体系，主流的RDBMS数据库、N
 |            | FTP             |     √     |     √     |               [读](https://github.com/alibaba/DataX/blob/master/ftpreader/doc/ftpreader.md) 、[写](https://github.com/alibaba/DataX/blob/master/ftpwriter/doc/ftpwriter.md)               |
 |            | HDFS            |     √     |     √     |             [读](https://github.com/alibaba/DataX/blob/master/hdfsreader/doc/hdfsreader.md) 、[写](https://github.com/alibaba/DataX/blob/master/hdfswriter/doc/hdfswriter.md)             |
 |            | Elasticsearch   |           |     √     |                     [写](https://github.com/alibaba/DataX/blob/master/elasticsearchwriter/doc/elasticsearchwriter.md)                                            |
-|  时序数据库     | InfluxDB v1     |    √      |           |                  [读](influxdbreader/doc/README.md)                                                                            |
+|  时序数据库     | InfluxDB v1     |    √      |           |                  [读](influxdbreader/doc/README.md)       
+|       | InfluxDB v2     |    √      |           |                  [读](influxdb2httpreader/doc/README.md)     |
 
 # 我要开发新的插件
 请点击：[DataX插件开发宝典](xxx)
