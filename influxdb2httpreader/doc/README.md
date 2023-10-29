@@ -1,17 +1,17 @@
 
-# InfluxDbReader 插件文档
+# InfluxDbHttpReader 插件文档
 
 ___
 
 
 ## 1 快速介绍
 
-InfluxDbReader 实现了从 influxDB v2 读取数据。在底层实现上使用influxDB-java客户端连接 influxDB v2 并通过SQL语句，执行相应的SQL语句，将数据从SQL取出。
+InfluxDbHttpReader 实现了从 influxDB v2 读取数据。在底层实现上使用influxDB-HTTP API 连接 influxDB v2 并通过FluxSQL语句，执行相应的SQL语句，将数据从SQL取出。
 
 
 ## 2 实现原理
 
-简而言之，使用 influxDB-java 客户端建立远程连接 influxDB v2 ，并根据用户配置生成对应的 SQL 语句，将数据从 influxDB v2 查询出来，并将查询结果封装成抽象数据集 Record 传递给 writer 处理
+简而言之，使用 influxDB-HTTP API 建立远程连接 influxDB v2 ，并根据用户配置生成对应的 FluxSQL 语句，将数据从 influxDB v2 查询出来，并将查询结果封装成抽象数据集 Record 传递给 writer 处理
 
 
 ## 3 功能说明
@@ -124,7 +124,7 @@ InfluxDbReader 实现了从 influxDB v2 读取数据。在底层实现上使用i
     * 默认值：无 <br />
 
 * **splitIntervalS**
-    * 描述：用于 DataX 内部切分 Task ，单位秒（MS），每个 Task 只查询设定好的时间段
+    * 描述：用于 DataX 内部切分 Task ，单位毫秒（MS），每个 Task 只查询设定好的时间段
 
     * 必选：是 <br />
 
@@ -148,15 +148,5 @@ InfluxDbReader 实现了从 influxDB v2 读取数据。在底层实现上使用i
 
     * 默认值：无
 
-### 3.3 类型转换
 
-下面列出influxDBReader针对influxDB类型转换表
-
-| DataX 内部类型| influxDB 数据类型    |
-| -------- | -----  |
-| String   | String，null |
-| Double   | Double |
-| Boolean   | bool |
-| Date   | time |
-| Long   | int，long |
 
