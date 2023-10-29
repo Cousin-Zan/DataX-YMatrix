@@ -205,7 +205,7 @@ InfluxDbReader 实现了从 influxDB 读取数据。在底层实现上使用infl
     * 默认值：无 <br />
 
 * **splitIntervalS**
-    * 描述：用于 DataX 内部切分 Task ，单位秒（MS），每个 Task 只查询设定好的时间段
+    * 描述：用于 DataX 内部切分 Task ，单位毫秒（MS），每个 Task 只查询设定好的时间段
         
     * 必选：是 <br />
 
