@@ -1,0 +1,10 @@
+{
+  "name": "ymatrixhttpwriter",
+  "parameter": {
+    "url": "",
+    "tablename": "",
+    "batchsize": 100,
+    "fieldDelimiter": "|"
+  }
+}
+

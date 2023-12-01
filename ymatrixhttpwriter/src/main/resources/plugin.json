@@ -1,0 +1,6 @@
+{
+  "name": "ymatrixhttpwriter",
+  "class": "cn.ymatrix.datax.plugin.writer.ymatrixhttpwriter.YmatrixHttpWriter",
+  "description": "transfer data by MatrixGate HTTP API.",
+  "developer": "ymatrix"
+}
