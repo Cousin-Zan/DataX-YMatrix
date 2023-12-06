@@ -1,12 +1,21 @@
 # DataX ymatrixhttpwriter
 
-
+- 目前DataX仅适配了MxGate配置format参数为csv
+```bash
+mxgate config \
+    --source http \
+    --db-database postgres \
+    --target public.gl_voucher \
+    --time-format raw \
+    --format csv \
+    > mxgate_http.conf
+```
 ---
 
 
 ## 1 快速介绍
 
-ymatrixhttpwriter插件实现了通过MxGate HTTP API写入数据到YMatrix的功能，目前暂不支持bytea二进制数据类型的写入
+ymatrixhttpwriter插件实现了通过MxGate HTTP API写入数据到YMatrix的功能，目前暂不支持bytea二进制数据类型的写入及特殊字符的写入
 
 
 ## 2 实现原理
