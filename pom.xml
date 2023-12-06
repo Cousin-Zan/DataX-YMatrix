@@ -91,6 +91,7 @@
        <module>gpdbjsonwriter</module>
        <module>hbase11xsqlwriter</module>
        <module>elasticsearchwriter</module>
+       <module>ymatrixhttpwriter</module>
 
         <!-- common support module -->
         <module>plugin-rdbms-util</module>
