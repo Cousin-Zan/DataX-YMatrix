@@ -1,5 +1,7 @@
 package cn.ymatrix.datax.plugin.writer.ymatrixsdkwriter;
 
+import org.apache.commons.codec.binary.Hex;
+
 import cn.ymatrix.apiclient.DataPostListener;
 import cn.ymatrix.apiclient.MxClient;
 import cn.ymatrix.apiclient.Result;
@@ -284,9 +286,14 @@ public class YmatrixSdkWriter extends Writer {
             for (int i = 0; i < recordLength; i++) {
                 column = record.getColumn(i);
 
-                tuple.addColumn(String.valueOf(i), (column.asString() == null) ? "" : column.asString());
+                if (column.getType().toString() == "BYTES") {
+                    byte[] rawData = column.asBytes();
+                    String hexString = Hex.encodeHexString(rawData);
+                    tuple.addColumn(String.valueOf(i), (column.asBytes() == null) ? "" : "\\x"+hexString);
+                } else {
+                    tuple.addColumn(String.valueOf(i), (column.asString() == null) ? "" : column.asString());
+                }
 
-                //TODO sepcial for bytea
             }
             return tuple;
         }
