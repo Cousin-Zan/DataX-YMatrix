@@ -1,0 +1,6 @@
+{
+  "name": "ymatrixsdkwriter",
+  "class": "cn.ymatrix.datax.plugin.writer.ymatrixsdkwriter.YmatrixSdkWriter",
+  "description": "transfer data by MatrixGate SDK.",
+  "developer": "ymatrix"
+}

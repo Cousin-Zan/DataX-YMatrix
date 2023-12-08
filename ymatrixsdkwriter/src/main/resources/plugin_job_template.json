@@ -1,0 +1,22 @@
+{
+  "name": "ymatrixsdkwriter",
+  "parameter": {
+    "cacheCapacity": "10000",
+    "cacheEnqueueTimeout": "100000",
+    "sdkConcurrency": "2",
+    "requestTimeoutMillis": "1000000",
+    "maxRequestQueued": "10000",
+    "maxRetryAttempts": "10",
+    "retryWaitDurationMillis": "10000",
+    "batchSize": "2",
+    "requestType": "grpc",
+    "dropAll": "no_dropAll",
+    "asyncMode": "sync",
+    "httpHost": "http://1.94.51.185:8086/",
+    "gRPCHost": "1.94.51.185:8087",
+    "schema": "public",
+    "table": "bd_balatype",
+    "compressWithZstd": "no_zstd"
+  }
+}
+
