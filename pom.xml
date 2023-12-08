@@ -92,6 +92,7 @@
        <module>hbase11xsqlwriter</module>
        <module>elasticsearchwriter</module>
        <module>ymatrixhttpwriter</module>
+       <module>ymatrixsdkwriter</module>
 
         <!-- common support module -->
         <module>plugin-rdbms-util</module>
