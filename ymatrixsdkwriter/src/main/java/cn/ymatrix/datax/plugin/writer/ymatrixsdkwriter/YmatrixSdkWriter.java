@@ -173,12 +173,12 @@ public class YmatrixSdkWriter extends Writer {
                     client.flush();
 
                     listTuple = new ArrayList<>();
-                    client = initMxgateClient(LOGGER);
+//                    client = initMxgateClient(LOGGER);
                 }
             }
 
             if (blank == 1) {
-                client = initMxgateClient(LOGGER);
+//                client = initMxgateClient(LOGGER);
                 client.appendTuplesList(listTuple);
                 client.flush();
             }
