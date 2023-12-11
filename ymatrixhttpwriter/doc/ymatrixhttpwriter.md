@@ -27,20 +27,31 @@ ymatrixhttpwriter插件实现了通过MxGate HTTP API写入数据到YMatrix的�
 
 ### 3.1 配置样例
 
-* 这里使用一份从内存产生到 GpdbJsonWriter导入的数据。
+* 这里使用一份从内存产生到 ymatrixhttpwriter导入的数据。
 
 ```json
 {
-  "name": "ymatrixhttpwriter",
-  "parameter": {
-    "url": "http://1.94.51.185:8086/",
-    "tablename": "",
-    "batchsize": 100,
-    "fieldDelimiter": "|"
+  "job": {
+    "setting": {
+      "speed": {
+        "byte": -1,
+        "channel": "64"
+      }
+    },
+    "content": [{
+      "reader": {},
+      "writer": {
+        "name": "ymatrixhttpwriter",
+        "parameter": {
+          "url": "http://1.94.51.185:8086/",
+          "tablename": "",
+          "batchsize": 100,
+          "fieldDelimiter": "|"
+        }
+      }
+    }]
   }
 }
-
-
 
 ```
 
