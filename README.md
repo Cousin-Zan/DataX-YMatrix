@@ -72,7 +72,7 @@ DataX目前已经有了比较全面的插件体系，主流的RDBMS数据库、N
 This software is free to use under the Apache License [Apache license](https://github.com/alibaba/DataX/blob/master/license.txt).
 
 # 更新
-根据 [@felix.wang](https://github.com/felix-thinkingdata) 的 PR（https://github.com/alibaba/DataX/pull/584），在 HashData 版本的 DataX 上，更新了 hdfsreader 对于 parquet 文件读取的支持。
+根据 [@felix.wang](https://github.com/felix-thinkingdata) 的 PR[（https://github.com/alibaba/DataX/pull/584）](https://github.com/alibaba/DataX/pull/584)，在 HashData 版本的 DataX 上，更新了 hdfsreader 对于 parquet 文件读取的支持。
 本次代码修改旨在验证利用 DataX 迁移腾讯云COS桶中的 parquet 文件数据至 Greenplum 数据库中
 
 感谢[@felix.wang](https://github.com/felix-thinkingdata)作者提交的关于hdfs parquet文件格式支持的代码分支
