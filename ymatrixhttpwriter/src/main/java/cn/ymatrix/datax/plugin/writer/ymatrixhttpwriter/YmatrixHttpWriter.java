@@ -107,6 +107,8 @@ public class YmatrixHttpWriter extends Writer {
                     }
 
                     sb = new StringBuilder(tablename + "\n");
+
+                    blank = 0;
                 }
             }
 
