@@ -49,22 +49,22 @@ ymatrixsdkwriter插件实现了通过MxGate SDK写入数据到YMatrix的功能�
       "writer": {
         "name": "ymatrixsdkwriter",
         "parameter": {
-          "cacheCapacity": "1000",
+          "cacheCapacity": "50000",
           "cacheEnqueueTimeout": "3000",
-          "sdkConcurrency": "500",
+          "sdkConcurrency": "50",
           "requestTimeoutMillis": "500000",
           "maxRequestQueued": "100000",
           "maxRetryAttempts": "3",
           "retryWaitDurationMillis": "1000",
-          "batchSize": "500",
+          "batchSize": "5000",
           "requestType": "http",
           "dropAll": "no_dropAll",
-          "asyncMode": "async",
+          "asyncMode": "no_async",
           "httpHost": "http://172.16.100.30:8086/",
           "gRPCHost": "172.16.100.30:8087",
           "schema": "public",
           "table": "gl_voucher",
-          "compressWithZstd": "zstd"
+          "compressWithZstd": "no_zstd"
         }
       }
     }]
@@ -95,7 +95,7 @@ ymatrixsdkwriter插件实现了通过MxGate SDK写入数据到YMatrix的功能�
 
 * **sdkConcurrency**
 
-    * 描述：同时向 mxgate 写入数据的线程数量 <br />
+    * 描述：同时向 mxgate 写入数据的线程数量，推荐调整为 10～100 的某个值 <br />
 
     * 必选：是 <br />
 
