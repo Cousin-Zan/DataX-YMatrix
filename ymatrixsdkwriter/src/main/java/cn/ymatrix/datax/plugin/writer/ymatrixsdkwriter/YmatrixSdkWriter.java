@@ -57,7 +57,7 @@ public class YmatrixSdkWriter extends Writer {
         private Configuration writerSliceConfig;
         private static final String CUSTOMER_LOG_TAG = "[>>>CUSTOMER<<<] ";
         private static MxBuilder mxBuilder;
-        private static MxClient client;
+        private MxClient client;
         private String cacheCapacity;
         private String cacheEnqueueTimeout;
         private String sdkConcurrency;
