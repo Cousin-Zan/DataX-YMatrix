@@ -57,7 +57,7 @@ public class YmatrixSdkWriter extends Writer {
         private Configuration writerSliceConfig;
         private static final String CUSTOMER_LOG_TAG = "[>>>CUSTOMER<<<] ";
         private static MxBuilder mxBuilder;
-
+        private static MxClient client;
         private String cacheCapacity;
         private String cacheEnqueueTimeout;
         private String sdkConcurrency;
@@ -75,7 +75,7 @@ public class YmatrixSdkWriter extends Writer {
         private String table;
         private String compressWithZstd;
 
-        private static int errCount = 0 ;
+//        private static int errCount = 0 ;
 
         @Override
         public void init() {
@@ -99,6 +99,7 @@ public class YmatrixSdkWriter extends Writer {
             this.compressWithZstd = this.writerSliceConfig.getString(Key.compressWithZstd);
 
             initMxgateSDKBuilder(LOG);
+            initMxgateClient(LOG);
 
         }
 
@@ -151,48 +152,8 @@ public class YmatrixSdkWriter extends Writer {
             }
         }
 
-        private void sendDataToMxgate(Logger LOGGER, RecordReceiver recordReceiver) {
+        private void initMxgateClient(final Logger LOGGER) {
 
-            Record record;
-            int receivedCount = 0;
-            int blank = 0;
-
-            List<Tuple> listTuple = new ArrayList<>();
-            MxClient client = initMxgateClient(LOGGER);
-
-            while ((record = recordReceiver.getFromReader()) != null) {
-
-                blank = 1;
-
-                listTuple.add(recordToString(client, record));
-                receivedCount++;
-
-                if (receivedCount % Integer.parseInt(batchSize) == 0) {
-
-                    client.appendTuplesList(listTuple);
-                    client.flush();
-
-                    listTuple = new ArrayList<>();
-//                    client = initMxgateClient(LOGGER);
-                }
-            }
-
-            if (blank == 1) {
-//                client = initMxgateClient(LOGGER);
-                client.appendTuplesList(listTuple);
-                client.flush();
-            }
-
-            try {
-                Thread.sleep(5000L);
-//                System.exit(0);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-        }
-
-        private MxClient initMxgateClient(final Logger LOGGER) {
-            MxClient client = null;
             try {
                 if (requestType.equals("http")) {
                     client = mxBuilder.connect(httpHost, gRPCHost, schema, table);
@@ -212,6 +173,9 @@ public class YmatrixSdkWriter extends Writer {
                     client.withBase64Encode4Compress();
                 }
             }
+
+            client.withIntervalToFlushMillis(2000);
+            client.withEnoughLinesToFlush(Integer.parseInt(batchSize));
 
 
             client.registerDataPostListener(
@@ -259,22 +223,31 @@ public class YmatrixSdkWriter extends Writer {
                                                 + " reason="
                                                 + entry.getValue());
 
-                                errCount++;
-                                LOGGER.info("&&&&&&&&&&&&"+errCount);
+//                                errCount++;
+//                                LOGGER.info("*****************"+errCount);
 
 
                                 Task.super.getTaskPluginCollector().collectDirtyRecord(record,
                                         "error tuple of table="
-                                        + entry.getKey().getTableName()
-                                        + " tuple="
-                                        + entry.getKey()
-                                        + " reason="
-                                        + entry.getValue());
+                                                + entry.getKey().getTableName()
+                                                + " tuple="
+                                                + entry.getKey()
+                                                + " reason="
+                                                + entry.getValue());
                             }
                         }
                     });
+        }
 
-            return client;
+        private void sendDataToMxgate(Logger LOGGER, RecordReceiver recordReceiver) {
+
+            Record record;
+
+            while ((record = recordReceiver.getFromReader()) != null) {
+
+                client.appendTuple(recordToString(client, record));
+
+            }
         }
 
         private Tuple recordToString(MxClient client, Record record) {
