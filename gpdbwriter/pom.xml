@@ -4,7 +4,7 @@
     <parent>
         <artifactId>datax-all</artifactId>
         <groupId>com.alibaba.datax</groupId>
-        <version>v1.0.4-hashdata</version>
+        <version>0.0.1-SNAPSHOT</version>
     </parent>
 	<artifactId>gpdbwriter</artifactId>
 	<name>gpdbwriter</name>
