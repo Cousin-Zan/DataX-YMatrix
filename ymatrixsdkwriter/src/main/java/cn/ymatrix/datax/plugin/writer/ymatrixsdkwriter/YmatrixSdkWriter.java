@@ -20,44 +20,15 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class YmatrixSdkWriter extends Writer {
 
+    private static MxBuilder mxBuilder;
+    private static int groupSize = 10;
+    private static AtomicInteger count = new AtomicInteger(0);
+
     public static class Job extends Writer.Job {
-
-        private static final Logger LOG = LoggerFactory
-                .getLogger(Job.class);
-        private Configuration originalConfig;
-
-        @Override
-        public void init() {
-            this.originalConfig = super.getPluginJobConf();
-        }
-
-        @Override
-        public void destroy() {
-
-        }
-
-        @Override
-        public List<Configuration> split(int mandatoryNumber) {
-            List<Configuration> writerSplitConfigs = new ArrayList<Configuration>();
-            for (int i = 0; i < mandatoryNumber; i++) {
-                writerSplitConfigs.add(this.originalConfig);
-            }
-
-            return writerSplitConfigs;
-        }
-    }
-
-    public static class Task extends Writer.Task {
-
-        private static final Logger LOG = LoggerFactory
-                .getLogger(Task.class);
-        private Configuration writerSliceConfig;
-        private static final String CUSTOMER_LOG_TAG = "[>>>CUSTOMER<<<] ";
-        private static MxBuilder mxBuilder;
-        private MxClient client;
         private String cacheCapacity;
         private String cacheEnqueueTimeout;
         private String sdkConcurrency;
@@ -74,13 +45,16 @@ public class YmatrixSdkWriter extends Writer {
         private String schema;
         private String table;
         private String compressWithZstd;
+        private Configuration writerSliceConfig;
 
-//        private static int errCount = 0 ;
+        private static final Logger LOG = LoggerFactory
+                .getLogger(Job.class);
+        private Configuration originalConfig;
 
         @Override
         public void init() {
+            this.originalConfig = super.getPluginJobConf();
             this.writerSliceConfig = getPluginJobConf();
-
             this.cacheCapacity = this.writerSliceConfig.getString(Key.cacheCapacity);
             this.cacheEnqueueTimeout = this.writerSliceConfig.getString(Key.cacheEnqueueTimeout);
             this.sdkConcurrency = this.writerSliceConfig.getString(Key.sdkConcurrency);
@@ -97,10 +71,15 @@ public class YmatrixSdkWriter extends Writer {
             this.schema = this.writerSliceConfig.getString(Key.schema);
             this.table = this.writerSliceConfig.getString(Key.table);
             this.compressWithZstd = this.writerSliceConfig.getString(Key.compressWithZstd);
-
+            try {
+                groupSize = Integer.parseInt(this.writerSliceConfig.getString(Key.groupSize));
+            } catch (Exception e) {
+                LOG.warn("parse groupSize error: {}", e.getMessage());
+            } finally {
+                groupSize = 10;
+            }
+            LOG.info("config group size: {}", groupSize);
             initMxgateSDKBuilder(LOG);
-            initMxgateClient(LOG);
-
         }
 
         @Override
@@ -109,14 +88,16 @@ public class YmatrixSdkWriter extends Writer {
         }
 
         @Override
-        public void startWrite(RecordReceiver recordReceiver) {
-
-            sendDataToMxgate(LOG, recordReceiver);
-
+        public List<Configuration> split(int mandatoryNumber) {
+            List<Configuration> writerSplitConfigs = new ArrayList<Configuration>();
+            for (int i = 0; i < mandatoryNumber; i++) {
+                Configuration cfg = this.originalConfig.clone();
+                writerSplitConfigs.add(this.originalConfig);
+            }
+            return writerSplitConfigs;
         }
 
         private void initMxgateSDKBuilder(Logger LOGGER) {
-
             MxBuilder.Builder builder =
                     MxBuilder.newBuilder()
                             .withDropAll(false)
@@ -145,20 +126,85 @@ public class YmatrixSdkWriter extends Writer {
 
             try {
                 mxBuilder = builder.build();
+                LOGGER.info("############# Build mxBuilder for job {} #############", this.getClass().getName());
             } catch (IllegalStateException e){
                 LOGGER.warn("############# MxBuilder Object has been created, Reuse MxBuilder Object! #############");
             } finally {
                 mxBuilder = MxBuilder.instance();
             }
         }
+    }
+
+    public static class Task extends Writer.Task {
+
+        private static final Logger LOG = LoggerFactory
+                .getLogger(Task.class);
+        private Configuration writerSliceConfig;
+        private static final String CUSTOMER_LOG_TAG = "[>>>CUSTOMER<<<] ";
+        private MxClient client;
+        private String cacheCapacity;
+        private String cacheEnqueueTimeout;
+        private String sdkConcurrency;
+        private String requestTimeoutMillis;
+        private String maxRequestQueued;
+        private String maxRetryAttempts;
+        private String retryWaitDurationMillis;
+        private String batchSize;
+        private String requestType;
+        private String dropAll;
+        private String asyncMode;
+        private String httpHost;
+        private String gRPCHost;
+        private String schema;
+        private String table;
+        private String compressWithZstd;
+
+        private int groupNum;
+
+        @Override
+        public void init() {this.writerSliceConfig = getPluginJobConf();
+            this.cacheCapacity = this.writerSliceConfig.getString(Key.cacheCapacity);
+            this.cacheEnqueueTimeout = this.writerSliceConfig.getString(Key.cacheEnqueueTimeout);
+            this.sdkConcurrency = this.writerSliceConfig.getString(Key.sdkConcurrency);
+            this.requestTimeoutMillis = this.writerSliceConfig.getString(Key.requestTimeoutMillis);
+            this.maxRequestQueued = this.writerSliceConfig.getString(Key.maxRequestQueued);
+            this.maxRetryAttempts = this.writerSliceConfig.getString(Key.maxRetryAttempts);
+            this.retryWaitDurationMillis = this.writerSliceConfig.getString(Key.retryWaitDurationMillis);
+            this.batchSize = this.writerSliceConfig.getString(Key.batchSize);
+            this.requestType = this.writerSliceConfig.getString(Key.requestType);
+            this.dropAll = this.writerSliceConfig.getString(Key.dropAll);
+            this.asyncMode = this.writerSliceConfig.getString(Key.asyncMode);
+            this.httpHost = this.writerSliceConfig.getString(Key.httpHost);
+            this.gRPCHost = this.writerSliceConfig.getString(Key.gRPCHost);
+            this.schema = this.writerSliceConfig.getString(Key.schema);
+            this.table = this.writerSliceConfig.getString(Key.table);
+            this.compressWithZstd = this.writerSliceConfig.getString(Key.compressWithZstd);
+
+            this.groupNum = count.getAndIncrement() % groupSize + 1;
+            LOG.info("config group num={} for task: {}", groupNum, this.getClass().getName());
+            initMxgateClient(LOG);
+        }
+
+        @Override
+        public void destroy() {
+
+        }
+
+        @Override
+        public void startWrite(RecordReceiver recordReceiver) {
+            sendDataToMxgate(LOG, recordReceiver);
+        }
+
+
 
         private void initMxgateClient(final Logger LOGGER) {
-
             try {
                 if (requestType.equals("http")) {
-                    client = mxBuilder.connect(httpHost, gRPCHost, schema, table);
+//                    client = mxBuilder.connect(httpHost, gRPCHost, schema, table);
+                    client = mxBuilder.connectWithGroup(httpHost, gRPCHost, schema, table, this.groupNum);
                 } else if (requestType.equals("grpc")) {
-                    client = mxBuilder.connect(gRPCHost, gRPCHost, schema, table);
+//                    client = mxBuilder.connect(gRPCHost, gRPCHost, schema, table);
+                    client = mxBuilder.connectWithGroup(gRPCHost, gRPCHost, schema, table, this.groupNum);
                 }
             } catch (Exception e) {
                 LOGGER.error("MxClient init error: {}" + e.getMessage());
@@ -176,7 +222,6 @@ public class YmatrixSdkWriter extends Writer {
 
             client.withIntervalToFlushMillis(2000);
             client.withEnoughLinesToFlush(Integer.parseInt(batchSize));
-
 
             client.registerDataPostListener(
                     new DataPostListener() {
@@ -272,5 +317,6 @@ public class YmatrixSdkWriter extends Writer {
         }
     }
 }
+
 
 

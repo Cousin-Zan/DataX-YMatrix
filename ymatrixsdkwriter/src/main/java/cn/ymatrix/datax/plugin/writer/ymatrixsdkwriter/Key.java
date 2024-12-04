@@ -17,6 +17,6 @@ public class Key {
     public static final String schema = "schema";
     public static final String table = "table";
     public static final String compressWithZstd = "compressWithZstd";
-
+    public static final String groupSize = "groupSize";
 
 }

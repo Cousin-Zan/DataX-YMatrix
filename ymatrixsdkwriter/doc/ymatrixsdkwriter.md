@@ -51,7 +51,8 @@ ymatrixsdkwriter插件实现了通过MxGate SDK写入数据到YMatrix的功能�
         "parameter": {
           "cacheCapacity": "50000",
           "cacheEnqueueTimeout": "3000",
-          "sdkConcurrency": "50",
+          "sdkConcurrency": "10",
+          "groupSize": 20,
           "requestTimeoutMillis": "500000",
           "maxRequestQueued": "100000",
           "maxRetryAttempts": "3",
@@ -100,6 +101,15 @@ ymatrixsdkwriter插件实现了通过MxGate SDK写入数据到YMatrix的功能�
     * 必选：是 <br />
 
     * 默认值：无 <br />
+
+
+* **groupSize**
+
+  * 描述：定义 MxClient Group 个数 <br />
+
+  * 必选：是 <br />
+
+  * 默认值：10 <br />
 
 
 * **requestTimeoutMillis**
