@@ -17,7 +17,11 @@
     "gRPCHost": "172.16.100.30:8087",
     "schema": "public",
     "table": "gl_voucher",
-    "compressWithZstd": "no_zstd"
+    "compressWithZstd": "no_zstd",
+    "userName": "mxadmin",
+    "passWord": "mxadmin",
+    "jdbcUrl" : "jdbc:postgresql://172.16.100.30:5432/mydb",
+    "preSql": "truncate table public.t1"
   }
 }
 

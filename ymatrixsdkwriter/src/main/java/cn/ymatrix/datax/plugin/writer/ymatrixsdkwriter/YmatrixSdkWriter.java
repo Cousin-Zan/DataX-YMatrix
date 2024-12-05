@@ -1,5 +1,7 @@
 package cn.ymatrix.datax.plugin.writer.ymatrixsdkwriter;
 
+import com.alibaba.datax.common.exception.DataXException;
+import com.alibaba.datax.common.spi.ErrorCode;
 import org.apache.commons.codec.binary.Hex;
 
 import cn.ymatrix.apiclient.DataPostListener;
@@ -17,6 +19,10 @@ import com.alibaba.datax.common.util.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -83,8 +89,45 @@ public class YmatrixSdkWriter extends Writer {
         }
 
         @Override
-        public void destroy() {
+        public void prepare() {
 
+            String username = originalConfig.getString(Key.userName);
+            String password = originalConfig.getString(Key.passWord);
+
+            String jdbcUrl = originalConfig.getString(Key.jdbcUrl);
+            String preSql = originalConfig.getString(Key.preSql);
+
+            Connection conn = null;
+            Statement stmt = null;
+
+            LOG.info("开始执行 preSQL: {}... context info:{}.", preSql, jdbcUrl);
+
+            try {
+                Class.forName("org.postgresql.Driver");
+                conn = DriverManager.getConnection(jdbcUrl, username, password);
+                stmt = conn.createStatement();
+                stmt.executeUpdate(preSql);
+
+                LOG.info("执行 preSQL: {} 完毕!  context info:{}.", preSql, jdbcUrl);
+            } catch (Exception e) {
+                LOG.error("执行 preSQL: {} 失败! 请检查参数设置!  context info:{}.", preSql, jdbcUrl);
+                LOG.error("执行 preSQL: {} 失败原因：{}", preSql, e.getMessage());
+
+                throw new RuntimeException(e);
+            }
+
+            if (null != stmt) {
+                try {
+                    stmt.close();
+                } catch (SQLException unused) {
+                }
+            }
+            if (null != conn) {
+                try {
+                    conn.close();
+                } catch (SQLException unused) {
+                }
+            }
         }
 
         @Override
@@ -95,6 +138,11 @@ public class YmatrixSdkWriter extends Writer {
                 writerSplitConfigs.add(this.originalConfig);
             }
             return writerSplitConfigs;
+        }
+
+        @Override
+        public void destroy() {
+
         }
 
         private void initMxgateSDKBuilder(Logger LOGGER) {

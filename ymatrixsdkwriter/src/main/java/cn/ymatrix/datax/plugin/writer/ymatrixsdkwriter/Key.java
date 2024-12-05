@@ -18,5 +18,10 @@ public class Key {
     public static final String table = "table";
     public static final String compressWithZstd = "compressWithZstd";
     public static final String groupSize = "groupSize";
+    public static final String userName = "userName";
+    public static final String passWord = "passWord";
+    public static final String jdbcUrl = "jdbcUrl";
+    public static final String preSql = "preSql";
+
 
 }
