@@ -97,35 +97,38 @@ public class YmatrixSdkWriter extends Writer {
             String jdbcUrl = originalConfig.getString(Key.jdbcUrl);
             String preSql = originalConfig.getString(Key.preSql);
 
-            Connection conn = null;
-            Statement stmt = null;
+            if (preSql != null) {
 
-            LOG.info("开始执行 preSQL: {}... context info:{}.", preSql, jdbcUrl);
+                Connection conn = null;
+                Statement stmt = null;
 
-            try {
-                Class.forName("org.postgresql.Driver");
-                conn = DriverManager.getConnection(jdbcUrl, username, password);
-                stmt = conn.createStatement();
-                stmt.executeUpdate(preSql);
+                LOG.info("开始执行 preSQL: {}... context info:{}.", preSql, jdbcUrl);
 
-                LOG.info("执行 preSQL: {} 完毕!  context info:{}.", preSql, jdbcUrl);
-            } catch (Exception e) {
-                LOG.error("执行 preSQL: {} 失败! 请检查参数设置!  context info:{}.", preSql, jdbcUrl);
-                LOG.error("执行 preSQL: {} 失败原因：{}", preSql, e.getMessage());
-
-                throw new RuntimeException(e);
-            }
-
-            if (null != stmt) {
                 try {
-                    stmt.close();
-                } catch (SQLException unused) {
+                    Class.forName("org.postgresql.Driver");
+                    conn = DriverManager.getConnection(jdbcUrl, username, password);
+                    stmt = conn.createStatement();
+                    stmt.executeUpdate(preSql);
+
+                    LOG.info("执行 preSQL: {} 完毕!  context info:{}.", preSql, jdbcUrl);
+                } catch (Exception e) {
+                    LOG.error("执行 preSQL: {} 失败! 请检查参数设置!  context info:{}.", preSql, jdbcUrl);
+                    LOG.error("执行 preSQL: {} 失败原因：{}", preSql, e.getMessage());
+
+                    throw new RuntimeException(e);
                 }
-            }
-            if (null != conn) {
-                try {
-                    conn.close();
-                } catch (SQLException unused) {
+
+                if (null != stmt) {
+                    try {
+                        stmt.close();
+                    } catch (SQLException unused) {
+                    }
+                }
+                if (null != conn) {
+                    try {
+                        conn.close();
+                    } catch (SQLException unused) {
+                    }
                 }
             }
         }
