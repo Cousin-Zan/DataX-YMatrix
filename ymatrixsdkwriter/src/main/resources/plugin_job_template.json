@@ -4,7 +4,9 @@
     "cacheCapacity": "50000",
     "cacheEnqueueTimeout": "3000",
     "sdkConcurrency": "10",
-    "groupSize": 20,
+    "mxclientSize": "50",
+    "groupSize": "5",
+    "jobDestroyMS":"30000",
     "requestTimeoutMillis": "500000",
     "maxRequestQueued": "100000",
     "maxRetryAttempts": "3",
@@ -16,11 +18,11 @@
     "httpHost": "http://172.16.100.30:8086/",
     "gRPCHost": "172.16.100.30:8087",
     "schema": "public",
-    "table": "gl_voucher",
+    "table": "t1",
     "compressWithZstd": "no_zstd",
     "userName": "mxadmin",
     "passWord": "mxadmin",
-    "jdbcUrl" : "jdbc:postgresql://172.16.100.30:5432/mydb",
+    "jdbcUrl" : "jdbc:postgresql://172.16.100.29:5432/mydb",
     "preSql": "truncate table public.t1"
   }
 }

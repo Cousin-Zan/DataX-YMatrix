@@ -1,7 +1,5 @@
 package cn.ymatrix.datax.plugin.writer.ymatrixsdkwriter;
 
-import com.alibaba.datax.common.exception.DataXException;
-import com.alibaba.datax.common.spi.ErrorCode;
 import org.apache.commons.codec.binary.Hex;
 
 import cn.ymatrix.apiclient.DataPostListener;
@@ -19,20 +17,24 @@ import com.alibaba.datax.common.util.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class YmatrixSdkWriter extends Writer {
-
     private static MxBuilder mxBuilder;
-    private static int groupSize = 10;
     private static AtomicInteger count = new AtomicInteger(0);
+    private static Map<Integer, MxClient> mxClientMap = new ConcurrentHashMap<Integer, MxClient>();
+    private static int groupSize = 5;
+    private static int mxClientSize = 5;
 
     public static class Job extends Writer.Job {
         private String cacheCapacity;
@@ -52,10 +54,11 @@ public class YmatrixSdkWriter extends Writer {
         private String table;
         private String compressWithZstd;
         private Configuration writerSliceConfig;
+        private static final String CUSTOMER_LOG_TAG = "[>>>CUSTOMER<<<] ";
 
-        private static final Logger LOG = LoggerFactory
-                .getLogger(Job.class);
+        private static final Logger LOG = LoggerFactory.getLogger(Job.class);
         private Configuration originalConfig;
+        private int jobDestroyMS = 30000;
 
         @Override
         public void init() {
@@ -77,15 +80,36 @@ public class YmatrixSdkWriter extends Writer {
             this.schema = this.writerSliceConfig.getString(Key.schema);
             this.table = this.writerSliceConfig.getString(Key.table);
             this.compressWithZstd = this.writerSliceConfig.getString(Key.compressWithZstd);
+
+            try {
+                this.jobDestroyMS = Integer.parseInt(this.writerSliceConfig.getString(Key.jobDestroyMS));
+            } catch (Exception e) {
+                e.printStackTrace();
+                LOG.warn("parse jobDestroyMS({}) error: {},set to a default value: 30000", Key.groupSize, e.getMessage());
+                this.jobDestroyMS = 30000;
+            }
+            LOG.info("init jobDestroyMS = {}", this.jobDestroyMS);
+
             try {
                 groupSize = Integer.parseInt(this.writerSliceConfig.getString(Key.groupSize));
             } catch (Exception e) {
-                LOG.warn("parse groupSize error: {}", e.getMessage());
-            } finally {
-                groupSize = 10;
+                e.printStackTrace();
+                LOG.warn("parse groupSize({}) error: {},set to a fixed number: 5", Key.groupSize, e.getMessage());
+                groupSize = 5;
             }
-            LOG.info("config group size: {}", groupSize);
-            initMxgateSDKBuilder(LOG);
+            LOG.info("init groupSize = {}", groupSize);
+
+            try {
+                mxClientSize = Integer.parseInt(this.writerSliceConfig.getString(Key.mxclientSize));
+            } catch (Exception e) {
+                e.printStackTrace();
+                LOG.warn("parse mxClientSize({}) error: {},set to a fixed number: 5", Key.mxclientSize, e.getMessage());
+                mxClientSize = 5;
+            }
+            LOG.info("init mxClientSize = {}", mxClientSize);
+
+            initMxGateSDKBuilder(LOG);
+            initMxGateClient(LOG);
         }
 
         @Override
@@ -132,6 +156,24 @@ public class YmatrixSdkWriter extends Writer {
                 }
             }
         }
+        @Override
+        public void destroy() {
+            LOG.info("begin to destroy the job {}", this.getClass().getSimpleName());
+            // Before destroy
+            for (MxClient mxClient : mxClientMap.values()) {
+                // flush the data into the queue of the SDK
+                mxClient.flush();
+                LOG.info("mxClient({}) flush", mxClient.getClientName());
+            }
+            LOG.info("before destroy the job {}, ({})，wait for the SDK to flush data", this.getClass().getSimpleName(), this.jobDestroyMS);
+            try {
+                Thread.sleep(this.jobDestroyMS);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+                throw new RuntimeException(e);
+            }
+            LOG.info("destroy the job {}", this.getClass().getSimpleName());
+        }
 
         @Override
         public List<Configuration> split(int mandatoryNumber) {
@@ -143,12 +185,7 @@ public class YmatrixSdkWriter extends Writer {
             return writerSplitConfigs;
         }
 
-        @Override
-        public void destroy() {
-
-        }
-
-        private void initMxgateSDKBuilder(Logger LOGGER) {
+        private void initMxGateSDKBuilder(Logger LOGGER) {
             MxBuilder.Builder builder =
                     MxBuilder.newBuilder()
                             .withDropAll(false)
@@ -184,15 +221,50 @@ public class YmatrixSdkWriter extends Writer {
                 mxBuilder = MxBuilder.instance();
             }
         }
+
+        private void initMxGateClient(Logger LOGGER) {
+            for (int i = 1; i <= mxClientSize; i++) {
+                int groupNum = i % groupSize + 1;
+                MxClient client = fetchMxGateClient(LOGGER, groupNum);
+                if (client == null) {
+                    LOGGER.error("fetch a nullable mxclient from the MxBuilder with groupNum={} and mxClientSize={}", groupNum, mxClientSize);
+                    return;
+                }
+                mxClientMap.put(i, client);
+                LOGGER.info("put mxclient({}->{}) into the map", i, client.getClientName());
+            }
+            LOGGER.info("total {} mxclients are in the map", mxClientMap.size());
+        }
+
+        private MxClient fetchMxGateClient(final Logger LOGGER, final int groupNum) {
+            try {
+                MxClient client;
+                if (requestType.equals("http")) {
+                    client = mxBuilder.connectWithGroup(httpHost, gRPCHost, schema, table, groupNum);
+                } else {
+                    client = mxBuilder.connectWithGroup(gRPCHost, gRPCHost, schema, table, groupNum);
+                }
+                if (compressWithZstd.equals("zstd")) {
+                    LOGGER.info("with compress");
+                    client.withCompress();
+                    if (requestType.equals("grpc")) {
+                        LOGGER.info("with base64");
+                        client.withBase64Encode4Compress();
+                    }
+                }
+                client.withEnoughLinesToFlush(Integer.parseInt(batchSize));
+                return client;
+            } catch (Exception e) {
+                LOGGER.error("MxClient init error: {}" + e.getMessage());
+                e.printStackTrace();
+            }
+            return null;
+        }
     }
 
     public static class Task extends Writer.Task {
-
-        private static final Logger LOG = LoggerFactory
-                .getLogger(Task.class);
+        private static final Logger LOG = LoggerFactory.getLogger(Task.class);
         private Configuration writerSliceConfig;
-        private static final String CUSTOMER_LOG_TAG = "[>>>CUSTOMER<<<] ";
-        private MxClient client;
         private String cacheCapacity;
         private String cacheEnqueueTimeout;
         private String sdkConcurrency;
@@ -209,11 +281,13 @@ public class YmatrixSdkWriter extends Writer {
         private String schema;
         private String table;
         private String compressWithZstd;
-
         private int groupNum;
+        private MxClient mxClient;
+        private int taskNum;
 
         @Override
-        public void init() {this.writerSliceConfig = getPluginJobConf();
+        public void init() {
+            this.writerSliceConfig = getPluginJobConf();
             this.cacheCapacity = this.writerSliceConfig.getString(Key.cacheCapacity);
             this.cacheEnqueueTimeout = this.writerSliceConfig.getString(Key.cacheEnqueueTimeout);
             this.sdkConcurrency = this.writerSliceConfig.getString(Key.sdkConcurrency);
@@ -230,10 +304,16 @@ public class YmatrixSdkWriter extends Writer {
             this.schema = this.writerSliceConfig.getString(Key.schema);
             this.table = this.writerSliceConfig.getString(Key.table);
             this.compressWithZstd = this.writerSliceConfig.getString(Key.compressWithZstd);
-
-            this.groupNum = count.getAndIncrement() % groupSize + 1;
-            LOG.info("config group num={} for task: {}", groupNum, this.getClass().getName());
-            initMxgateClient(LOG);
+            this.taskNum = count.incrementAndGet();
+            int mxclientID = this.taskNum % mxClientSize + 1;
+            LOG.info("begin to fetch mxclient with taskNum={}, mxClientID={}", taskNum, mxclientID);
+            this.mxClient = mxClientMap.get(mxclientID);
+            if (this.mxClient == null) {
+                LOG.error("Get unexpected nullable MxClient from the mxClientMap");
+                return;
+            } else {
+                LOG.info("fetch mxclient({}) with taskNum={}, mxClientID={} successfully", this.mxClient.getClientName(), taskNum, mxclientID);
+            }
         }
 
         @Override
@@ -243,118 +323,24 @@ public class YmatrixSdkWriter extends Writer {
 
         @Override
         public void startWrite(RecordReceiver recordReceiver) {
-            sendDataToMxgate(LOG, recordReceiver);
+            LOG.info("YMatrix SDK writer task({}) before sendDataToMxGate", this.taskNum);
+            sendDataToMxGate(LOG, recordReceiver);
+            LOG.info("YMatrix SDK writer task({}) after sendDataToMxGate", this.taskNum);
         }
 
-
-
-        private void initMxgateClient(final Logger LOGGER) {
-            try {
-                if (requestType.equals("http")) {
-//                    client = mxBuilder.connect(httpHost, gRPCHost, schema, table);
-                    client = mxBuilder.connectWithGroup(httpHost, gRPCHost, schema, table, this.groupNum);
-                } else if (requestType.equals("grpc")) {
-//                    client = mxBuilder.connect(gRPCHost, gRPCHost, schema, table);
-                    client = mxBuilder.connectWithGroup(gRPCHost, gRPCHost, schema, table, this.groupNum);
-                }
-            } catch (Exception e) {
-                LOGGER.error("MxClient init error: {}" + e.getMessage());
-                e.printStackTrace();
-            }
-
-            if (compressWithZstd.equals("zstd")) {
-                LOGGER.info("with compress");
-                client.withCompress();
-                if (requestType.equals("grpc")) {
-                    LOGGER.info("with base64");
-                    client.withBase64Encode4Compress();
-                }
-            }
-
-            client.withIntervalToFlushMillis(2000);
-            client.withEnoughLinesToFlush(Integer.parseInt(batchSize));
-
-            client.registerDataPostListener(
-                    new DataPostListener() {
-                        public void onSuccess(Result result) {
-                            LOGGER.info(CUSTOMER_LOG_TAG + "Send tuples success: " + result.getMsg());
-                            LOGGER.info(CUSTOMER_LOG_TAG + "Succeed lines onSuccess callback " + result.getSucceedLines());
-                        }
-
-                        public void onFailure(Result result) {
-                            LOGGER.error(
-                                    CUSTOMER_LOG_TAG
-                                            + "Sendtuples fail error tuples:{} "
-                                            + result.getErrorTuplesMap());
-                            Record record = new Record() {
-                                @Override
-                                public void addColumn(Column column) {}
-                                @Override
-                                public void setColumn(int i, Column column) {}
-                                @Override
-                                public Column getColumn(int i) {
-                                    return null;
-                                }
-                                @Override
-                                public int getColumnNumber() {
-                                    return 0;
-                                }
-                                @Override
-                                public int getByteSize() {
-                                    return 0;
-                                }
-                                @Override
-                                public int getMemorySize() {
-                                    return 0;
-                                }
-                            };
-
-                            for (Map.Entry<Tuple, String> entry : result.getErrorTuplesMap().entrySet()) {
-                                LOGGER.error(
-                                        CUSTOMER_LOG_TAG
-                                                + "error tuple of table="
-                                                + entry.getKey().getTableName()
-                                                + " tuple="
-                                                + entry.getKey()
-                                                + " reason="
-                                                + entry.getValue());
-
-//                                errCount++;
-//                                LOGGER.info("*****************"+errCount);
-
-
-                                Task.super.getTaskPluginCollector().collectDirtyRecord(record,
-                                        "error tuple of table="
-                                                + entry.getKey().getTableName()
-                                                + " tuple="
-                                                + entry.getKey()
-                                                + " reason="
-                                                + entry.getValue());
-                            }
-                        }
-                    });
-        }
-
-        private void sendDataToMxgate(Logger LOGGER, RecordReceiver recordReceiver) {
-
+        private void sendDataToMxGate(Logger LOGGER, RecordReceiver recordReceiver) {
             Record record;
-
             while ((record = recordReceiver.getFromReader()) != null) {
-
-                client.appendTuple(recordToString(client, record));
-
+                this.mxClient.appendTuple(recordToString(record));
             }
         }
 
-        private Tuple recordToString(MxClient client, Record record) {
+        private Tuple recordToString(Record record) {
             int recordLength = record.getColumnNumber();
-
             Column column;
-            Tuple tuple = client.generateEmptyTupleLite();
-
+            Tuple tuple = this.mxClient.generateEmptyTupleLite();
             for (int i = 0; i < recordLength; i++) {
                 column = record.getColumn(i);
-
                 if (column.getType().toString() == "BYTES") {
                     byte[] rawData = column.asBytes();
                     String hexString = Hex.encodeHexString(rawData);
@@ -362,12 +348,8 @@ public class YmatrixSdkWriter extends Writer {
                 } else {
                     tuple.addColumn(String.valueOf(i), (column.asString() == null) ? "" : column.asString());
                 }
-
             }
             return tuple;
         }
     }
 }
-
-
-

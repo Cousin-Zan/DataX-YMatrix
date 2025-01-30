@@ -52,7 +52,9 @@ ymatrixsdkwriter插件实现了通过MxGate SDK写入数据到YMatrix的功能�
           "cacheCapacity": "50000",
           "cacheEnqueueTimeout": "3000",
           "sdkConcurrency": "10",
-          "groupSize": 20,
+          "mxclientSize": "50",
+          "groupSize": "5",
+          "jobDestroyMS":"30000",
           "requestTimeoutMillis": "500000",
           "maxRequestQueued": "100000",
           "maxRetryAttempts": "3",
@@ -64,11 +66,11 @@ ymatrixsdkwriter插件实现了通过MxGate SDK写入数据到YMatrix的功能�
           "httpHost": "http://172.16.100.30:8086/",
           "gRPCHost": "172.16.100.30:8087",
           "schema": "public",
-          "table": "gl_voucher",
+          "table": "t1",
           "compressWithZstd": "no_zstd",
           "userName": "mxadmin",
           "passWord": "mxadmin",
-          "jdbcUrl" : "jdbc:postgresql://172.16.100.30:5432/mydb",
+          "jdbcUrl" : "jdbc:postgresql://172.16.100.29:5432/mydb",
           "preSql": "truncate table public.t1"
         }
       }
@@ -107,15 +109,33 @@ ymatrixsdkwriter插件实现了通过MxGate SDK写入数据到YMatrix的功能�
     * 默认值：无 <br />
 
 
+* **mxclientSize**
+
+  * 描述：设置初始化 mxClient 的个数 <br />
+
+  * 必选：是 <br />
+
+  * 默认值：5 <br />
+
+
 * **groupSize**
 
   * 描述：定义 MxClient Group 个数 <br />
 
   * 必选：是 <br />
 
-  * 默认值：10 <br />
+  * 默认值：5 <br />
 
 
+* **jobDestroyMS**
+
+  * 描述：在 Job 被销毁前，等待 MxGate SDK 写完数据的时间，单位毫秒 <br />
+
+  * 必选：是 <br />
+
+  * 默认值：30000 <br />
+
+  
 * **requestTimeoutMillis**
 
     * 描述：每个线程每次数据写入请求的超时时间(毫秒)
@@ -169,7 +189,7 @@ ymatrixsdkwriter插件实现了通过MxGate SDK写入数据到YMatrix的功能�
   * 默认值：无 <br />
 
 
-* **dropAll **
+* dropAll 
 
   * 描述：用于测试，(dropAll / no_dropAll)，dropAll则不会发送数据给 mxgate，直接 drop <br />
 
